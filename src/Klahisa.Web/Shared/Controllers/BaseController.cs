@@ -27,5 +27,6 @@ public abstract class BaseController : Controller
     protected static int Int(string? s) => int.TryParse(s, out var v) ? v : 0;
 
     protected static DateTime Dt(string? s, DateTime? padrao = null) =>
-        DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None, out var v) ? v : (padrao ?? DateTime.Today);
+        DateTime.TryParseExact(s?.Trim(), new[] { "yyyy-MM-dd", "dd/MM/yyyy" }, CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out var v) ? v : (padrao ?? DateTime.Today);
 }

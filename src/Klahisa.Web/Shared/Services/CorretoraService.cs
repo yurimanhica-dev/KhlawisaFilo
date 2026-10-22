@@ -28,7 +28,9 @@ public class CorretoraService
         a.Id = M.Prox(M.Apolices.Select(x => x.Id));
         var cod = (M.Cadastros.FirstOrDefault(c => c.Tipo == "ramos" && c.Descricao == a.Ramo)?.Codigo ?? "GER");
         a.Numero = $"AP/{cod}/{DateTime.Today.Year}/{a.Id:D4}";
-        a.Fim = a.Inicio.AddMonths(meses).AddDays(-1);
+        a.Referencia = M.Sequencia("PS", a.Id);
+        if (a.Fim == default) a.Fim = a.Inicio.AddMonths(meses).AddDays(-1);
+        if (a.DataRenovacao == default) a.DataRenovacao = a.Fim;
         a.Estado = "Pendente";
         M.Apolices.Add(a);
 
@@ -37,7 +39,7 @@ public class CorretoraService
         {
             Id = id, Numero = M.Sequencia("DB", id), ApoliceId = a.Id, ClienteId = a.ClienteId, SeguradoraId = a.SeguradoraId,
             Tipo = "Prémio", Descricao = $"Prémio {a.Ramo} — {a.Objecto}", Valor = a.Premio,
-            Emissao = DateTime.Today, Vencimento = DateTime.Today.AddDays(30), Emitido = false
+            Emissao = a.DataEmissao, Vencimento = a.DataEmissao.AddDays(30), Emitido = false
         });
         return Result<Apolice>.Success(a);
     }
@@ -161,7 +163,6 @@ public class CorretoraService
     public Result<Seguradora> GuardarSeguradora(Seguradora s)
     {
         if (string.IsNullOrWhiteSpace(s.Nome) || string.IsNullOrWhiteSpace(s.Sigla)) return Result<Seguradora>.Failure("Informe o nome e a sigla.");
-        if (s.ComissaoPct < 0 || s.ComissaoPct > 100) return Result<Seguradora>.Failure("Comissão inválida.");
         s.Id = M.Prox(M.Seguradoras.Select(x => x.Id));
         M.Seguradoras.Add(s);
         return Result<Seguradora>.Success(s);
@@ -246,6 +247,20 @@ public class CorretoraService
         i.Id = M.Prox(M.Cadastros.Select(x => x.Id));
         M.Cadastros.Add(i);
         return Result<CadastroItem>.Success(i);
+    }
+
+    public Result<CadastroItem> ActualizarCadastro(int id, string codigo, string descricao, string extra)
+    {
+        var item = M.Cadastros.FirstOrDefault(x => x.Id == id);
+        if (item is null) return Result<CadastroItem>.Failure("Registo não encontrado.");
+        if (string.IsNullOrWhiteSpace(codigo) || string.IsNullOrWhiteSpace(descricao))
+            return Result<CadastroItem>.Failure("Informe o código e a descrição.");
+        if (M.Cadastros.Any(x => x.Id != id && x.Tipo == item.Tipo && x.Codigo.Equals(codigo, StringComparison.OrdinalIgnoreCase)))
+            return Result<CadastroItem>.Failure("Já existe um registo com este código.");
+        item.Codigo = codigo;
+        item.Descricao = descricao;
+        item.Extra = extra;
+        return Result<CadastroItem>.Success(item);
     }
 
     public Result<bool> EliminarCadastro(int id)

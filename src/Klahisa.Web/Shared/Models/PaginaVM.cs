@@ -60,8 +60,16 @@ public class CampoVM
     public string Valor { get; set; } = "";
     public bool Obrigatorio { get; set; } = true;
     public bool SoLeitura { get; set; }
+    public bool CartaoLateral { get; set; }
+    public bool Pesquisavel { get; set; }
     public int Largura { get; set; } = 6;
     public string Dica { get; set; } = "";
+    public string Secao { get; set; } = "";
+    public string Aba { get; set; } = "";
+    public string? MostrarParaTipo { get; set; }
+    public string DependeDe { get; set; } = "";
+    public Dictionary<string, string> OpcaoPai { get; set; } = new();
+    public Dictionary<string, string> DadosOpcao { get; set; } = new();
     public List<(string Valor, string Texto)> Opcoes { get; set; } = new();
 
     public static CampoVM Txt(string n, string r, bool obrig = true, int larg = 6, string valor = "", string tipo = "text")
@@ -73,8 +81,8 @@ public class CampoVM
     public static CampoVM Num(string n, string r, string valor = "", bool obrig = true, int larg = 6)
         => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Largura = larg, Valor = valor, Tipo = "number" };
 
-    public static CampoVM Dat(string n, string r, DateTime? v = null, bool obrig = true)
-        => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Tipo = "date", Valor = v.HasValue ? v.Value.ToString("yyyy-MM-dd") : "" };
+    public static CampoVM Dat(string n, string r, DateTime? v = null, bool obrig = true, int larg = 6)
+        => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Tipo = "date", Largura = larg, Valor = v.HasValue ? v.Value.ToString("yyyy-MM-dd") : "" };
 
     public static CampoVM Sel(string n, string r, List<(string, string)> ops, string valor = "", bool obrig = true, int larg = 6)
         => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Tipo = "select", Valor = valor, Opcoes = ops, Largura = larg };
@@ -91,5 +99,6 @@ public class FormVM
     public string VoltarUrl { get; set; } = "";
     public string Botao { get; set; } = "Guardar";
     public string Info { get; set; } = "";
+    public bool UsaAbas { get; set; }
     public List<CampoVM> Campos { get; set; } = new();
 }

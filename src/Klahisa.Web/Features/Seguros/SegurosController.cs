@@ -6,23 +6,90 @@ public class SegurosController : BaseController
     public SegurosController(CorretoraService svc) => _svc = svc;
 
     // ======================= Pedido de Seguro =======================
-    private static FormVM FormPedido() => new()
+    private static CampoVM NaAba(CampoVM campo, string aba)
     {
-        Titulo = "Pedido de Seguro", Subtitulo = "Registar novo pedido / cotação", ActionUrl = "/Seguros/Pedido", VoltarUrl = "/Seguros/Lista",
-        Info = "O pedido fica Pendente e gera um débito por emitir. Use «Alocação de Débitos» para emitir e activar a apólice.",
-        Campos =
+        campo.Aba = aba;
+        return campo;
+    }
+
+    private static CampoVM Leitura(CampoVM campo)
+    {
+        campo.SoLeitura = true;
+        return campo;
+    }
+
+    private static CampoVM NoCartaoLateral(CampoVM campo)
+    {
+        campo.CartaoLateral = true;
+        return campo;
+    }
+
+    private static FormVM FormPedido()
+    {
+        var tipoSeguro = CampoVM.Sel("TipoSeguroId", "Tipo de seguro", M.Cadastros
+            .Where(c => c.Tipo == "tipos-seguro" && c.Estado == "Activo")
+            .OrderBy(c => c.Descricao).Select(c => (c.Id.ToString(), c.Descricao)).ToList());
+        tipoSeguro.DependeDe = "SeguradoraId";
+        foreach (var item in M.Cadastros.Where(c => c.Tipo == "tipos-seguro" && c.Estado == "Activo"))
         {
-            CampoVM.Sel("ClienteId", "Cliente", Opcoes.Clientes()),
-            CampoVM.Sel("SeguradoraId", "Seguradora", Opcoes.Seguradoras()),
-            CampoVM.Sel("Ramo", "Ramo", Opcoes.Cad("ramos")),
-            CampoVM.Sel("TipoSeguro", "Tipo de seguro", Opcoes.Cad("tipos-seguro")),
-            CampoVM.Txt("Objecto", "Objecto seguro (viatura, imóvel, pessoas…)", larg: 12),
-            CampoVM.Num("Capital", "Capital seguro (MT)", obrig: false),
-            CampoVM.Num("Premio", "Prémio total (MT)"),
-            CampoVM.Dat("Inicio", "Início", DateTime.Today),
-            CampoVM.Num("Meses", "Duração (meses)", "12")
+            tipoSeguro.OpcaoPai[item.Id.ToString()] = item.SeguradoraId.ToString();
+            tipoSeguro.DadosOpcao[item.Id.ToString()] = string.Join("|", item.SeguradoraId, item.Extra,
+                Fmt.Num(item.Coeficiente), Fmt.Num(item.EncargoPct), Fmt.Num(item.SeloPct), Fmt.Num(item.SobretaxaPct), Fmt.Num(item.ComissaoPct));
         }
-    };
+
+        var seguradora = CampoVM.Sel("SeguradoraId", "Seguradora", Opcoes.Seguradoras(), larg: 6);
+        foreach (var item in M.Seguradoras) seguradora.DadosOpcao[item.Id.ToString()] = item.ReferenciaPadrao;
+        var cliente = CampoVM.Sel("ClienteId", "Nome do cliente", Opcoes.Clientes(), larg: 9);
+        cliente.Pesquisavel = true;
+        var moeda = CampoVM.Sel("Moeda", "Código da moeda", Opcoes.Moedas(), "MZN", larg: 3);
+        moeda.DadosOpcao["MZN"] = "1.00";
+        foreach (var item in M.Cadastros.Where(c => c.Tipo == "cambios"))
+        {
+            if (decimal.TryParse(item.Extra, NumberStyles.Number, CultureInfo.InvariantCulture, out var taxa) && taxa > 0)
+                moeda.DadosOpcao[item.Codigo] = Fmt.Num(taxa);
+        }
+        var campos = new[]
+        {
+            NaAba(CampoVM.Ler("Referencia", "Referência da apólice", "Gerada ao guardar", 4), "Apólice"),
+            NaAba(CampoVM.Txt("NumeroApolice", "Número da apólice", larg: 4, tipo: "text"), "Apólice"),
+            NaAba(CampoVM.Dat("DataEmissao", "Data de emissão", DateTime.Today, larg: 4), "Apólice"),
+            NaAba(seguradora, "Apólice"),
+            NaAba(CampoVM.Txt("ReferenciaSeguradora", "Referência da seguradora", obrig: false, larg: 6), "Apólice"),
+            NaAba(cliente, "Apólice"),
+            NaAba(CampoVM.Sel("Periodicidade", "Periodicidade", Opcoes.De("Anual", "Semestral", "Trimestral", "Mensal"), larg: 3), "Apólice"),
+            NaAba(CampoVM.Dat("Inicio", "Data de início", DateTime.Today, larg: 4), "Apólice"),
+            NaAba(CampoVM.Dat("Fim", "Data final", DateTime.Today.AddYears(1).AddDays(-1), larg: 4), "Apólice"),
+            NaAba(CampoVM.Dat("DataRenovacao", "Data de renovação", DateTime.Today.AddYears(1), larg: 4), "Apólice"),
+            NaAba(moeda, "Apólice"),
+            NaAba(CampoVM.Sel("TipoCambio", "Câmbio a usar", Opcoes.De("Venda", "Compra"), "Venda", larg: 3), "Apólice"),
+            NaAba(Leitura(CampoVM.Num("Cambio", "Câmbio parametrizado", "1", obrig: false, larg: 3)), "Apólice"),
+            NaAba(tipoSeguro, "Detalhes"),
+            NaAba(CampoVM.Txt("Objecto", "Descrição", larg: 12), "Detalhes"),
+            NaAba(CampoVM.Num("Capital", "Valor segurado (MT)", larg: 3), "Detalhes"),
+            NaAba(CampoVM.Num("Premio", "Prémio total anual", obrig: true, larg: 3), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("PremioLiquido", "Prémio líquido", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("ComissaoPct", "% Comissão", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("ComissaoValor", "Comissão", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("EncargoPct", "% Encargos", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("EncargoValor", "Encargos", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("SeloPct", "% Selos", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("SeloValor", "Selos", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("SobretaxaPct", "% Sobretaxa", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("SobretaxaValor", "Sobretaxa", obrig: false, larg: 12))), "Detalhes"),
+            NaAba(NoCartaoLateral(Leitura(CampoVM.Num("Coeficiente", "Coeficiente", obrig: false, larg: 12))), "Detalhes")
+        };
+        var vm = new FormVM
+        {
+            Titulo = "Pedido de Seguro",
+            Subtitulo = "Registar novo pedido / cotação",
+            ActionUrl = "/Seguros/Pedido",
+            VoltarUrl = "/Seguros/Lista",
+            Info = "Seleccione primeiro a seguradora para listar os tipos de seguro associados. As taxas vêm do tipo escolhido. Informe o prémio anual total; o prémio líquido é calculado automaticamente.",
+            UsaAbas = true
+        };
+        vm.Campos.AddRange(campos);
+        return vm;
+    }
 
     [HttpGet]
     public IActionResult Pedido() => Form(FormPedido());
@@ -38,19 +105,39 @@ public class SegurosController : BaseController
         vm.Subtitulo = $"Renovação da apólice {apolice.Numero}";
         vm.Info = "Confirme os dados e ajuste o prémio ou a data de início antes de registar a renovação.";
         vm.Botao = "Registar renovação";
+        var config = M.Cadastros.FirstOrDefault(c => c.Tipo == "tipos-seguro" && c.Descricao == apolice.TipoSeguro);
         foreach (var campo in vm.Campos)
         {
             campo.Valor = campo.Nome switch
             {
+                "Referencia" => apolice.Referencia,
+                "NumeroApolice" => apolice.NumeroApolice,
+                "DataEmissao" => DateTime.Today.ToString("yyyy-MM-dd"),
+                "ReferenciaSeguradora" => apolice.ReferenciaSeguradora,
                 "ClienteId" => apolice.ClienteId.ToString(),
                 "SeguradoraId" => apolice.SeguradoraId.ToString(),
                 "Ramo" => apolice.Ramo,
-                "TipoSeguro" => apolice.TipoSeguro,
+                "TipoSeguroId" => (config?.Id ?? apolice.TipoSeguroId).ToString(),
                 "Objecto" => apolice.Objecto,
                 "Capital" => Fmt.Num(apolice.Capital),
                 "Premio" => Fmt.Num(apolice.Premio),
+                "PremioLiquido" => Fmt.Num(apolice.PremioLiquido),
+                "ComissaoPct" => Fmt.Num(apolice.ComissaoPct),
+                "ComissaoValor" => Fmt.Num(apolice.ComissaoValor),
+                "EncargoPct" => Fmt.Num(apolice.EncargoPct),
+                "EncargoValor" => Fmt.Num(apolice.EncargoValor),
+                "SeloPct" => Fmt.Num(apolice.SeloPct),
+                "SeloValor" => Fmt.Num(apolice.SeloValor),
+                "SobretaxaPct" => Fmt.Num(apolice.SobretaxaPct),
+                "SobretaxaValor" => Fmt.Num(apolice.SobretaxaValor),
+                "Coeficiente" => Fmt.Num(apolice.Coeficiente),
                 "Inicio" => apolice.Fim.AddDays(1).ToString("yyyy-MM-dd"),
-                "Meses" => "12",
+                "Fim" => apolice.Fim.AddDays(1).AddYears(1).AddDays(-1).ToString("yyyy-MM-dd"),
+                "DataRenovacao" => apolice.Fim.AddDays(1).AddYears(1).ToString("yyyy-MM-dd"),
+                "Periodicidade" => apolice.Periodicidade,
+                "Moeda" => apolice.Moeda,
+                "TipoCambio" => apolice.TipoCambio,
+                "Cambio" => Fmt.Num(apolice.Cambio),
                 _ => campo.Valor
             };
         }
@@ -60,13 +147,77 @@ public class SegurosController : BaseController
     [HttpPost]
     public IActionResult Pedido(IFormCollection f)
     {
+        var tipoSeguro = M.Cadastros.FirstOrDefault(c => c.Id == Int(f["TipoSeguroId"])
+            && c.Tipo == "tipos-seguro" && c.Estado == "Activo");
+        if (tipoSeguro is null)
+            return FormComErro(FormPedido(), f, "Seleccione um tipo de seguro activo.");
+        var seguradoraId = Int(f["SeguradoraId"]);
+        if (M.Seg(seguradoraId) is null || tipoSeguro.SeguradoraId != seguradoraId)
+            return FormComErro(FormPedido(), f, "Seleccione um tipo de seguro pertencente à seguradora escolhida.");
+        var numeroApolice = f["NumeroApolice"].ToString().Trim();
+        if (string.IsNullOrWhiteSpace(numeroApolice))
+            return FormComErro(FormPedido(), f, "Informe o número da apólice.");
+
+        var periodos = new Dictionary<string, int> { ["Anual"] = 12, ["Semestral"] = 6, ["Trimestral"] = 3, ["Mensal"] = 1 };
+        if (!periodos.TryGetValue(f["Periodicidade"].ToString(), out var meses))
+            return FormComErro(FormPedido(), f, "Seleccione uma periodicidade válida.");
+
+        var inicio = Dt(f["Inicio"]);
+        var fim = Dt(f["Fim"]);
+        var renovacao = Dt(f["DataRenovacao"]);
+        var fimEsperado = inicio.AddYears(1).AddDays(-1);
+        var renovacaoEsperada = inicio.AddYears(1);
+        var capital = Dec(f["Capital"]);
+        var moeda = f["Moeda"].ToString();
+        var parametroCambio = moeda == "MZN" ? "1" : M.Cadastros.FirstOrDefault(c => c.Tipo == "cambios" && c.Codigo == moeda)?.Extra;
+        if (!decimal.TryParse(parametroCambio, NumberStyles.Number, CultureInfo.InvariantCulture, out var cambio) || cambio <= 0)
+            return FormComErro(FormPedido(), f, "A moeda seleccionada não tem um câmbio válido parametrizado.");
+        var premioTotal = Dec(f["Premio"]);
+        if (capital <= 0 || premioTotal <= 0 || fim != fimEsperado || renovacao != renovacaoEsperada)
+            return FormComErro(FormPedido(), f, "Verifique o capital, câmbio e datas da apólice.");
+        if (string.IsNullOrWhiteSpace(f["Objecto"]))
+            return FormComErro(FormPedido(), f, "Informe a descrição do objecto seguro.");
+        if (!Opcoes.Moedas().Any(m => m.Item1 == moeda) || f["TipoCambio"].ToString() is not ("Venda" or "Compra"))
+            return FormComErro(FormPedido(), f, "Seleccione uma moeda e um tipo de câmbio válidos.");
+
+        var periodosAno = 12 / meses;
+        var premioLiquido = Math.Round(premioTotal * tipoSeguro.Coeficiente / periodosAno, 2);
+        var encargoValor = Math.Round(premioLiquido * tipoSeguro.EncargoPct / 100m, 2);
+        var seloValor = Math.Round(premioLiquido * tipoSeguro.SeloPct / 100m, 2);
+        var sobretaxaValor = Math.Round(premioLiquido * tipoSeguro.SobretaxaPct / 100m, 2);
+        var comissaoValor = Math.Round(premioLiquido * tipoSeguro.ComissaoPct / 100m, 2);
         var a = new Apolice
         {
-            ClienteId = Int(f["ClienteId"]), SeguradoraId = Int(f["SeguradoraId"]), Ramo = f["Ramo"].ToString(),
-            TipoSeguro = f["TipoSeguro"].ToString(), Objecto = f["Objecto"].ToString(), Capital = Dec(f["Capital"]),
-            Premio = Dec(f["Premio"]), Inicio = Dt(f["Inicio"])
+            ClienteId = Int(f["ClienteId"]),
+            SeguradoraId = seguradoraId,
+            TipoSeguroId = tipoSeguro.Id,
+            Ramo = tipoSeguro.Extra,
+            TipoSeguro = tipoSeguro.Descricao,
+            Objecto = f["Objecto"].ToString().Trim(),
+            NumeroApolice = numeroApolice,
+            ReferenciaSeguradora = f["ReferenciaSeguradora"].ToString().Trim(),
+            Capital = capital,
+            PremioLiquido = premioLiquido,
+            EncargoPct = tipoSeguro.EncargoPct,
+            EncargoValor = encargoValor,
+            SeloPct = tipoSeguro.SeloPct,
+            SeloValor = seloValor,
+            SobretaxaPct = tipoSeguro.SobretaxaPct,
+            SobretaxaValor = sobretaxaValor,
+            ComissaoPct = tipoSeguro.ComissaoPct,
+            ComissaoValor = comissaoValor,
+            Coeficiente = tipoSeguro.Coeficiente,
+            Premio = premioTotal,
+            DataEmissao = Dt(f["DataEmissao"]),
+            DataRenovacao = renovacao,
+            Periodicidade = f["Periodicidade"].ToString(),
+            Moeda = moeda,
+            TipoCambio = f["TipoCambio"].ToString(),
+            Cambio = cambio,
+            Inicio = inicio,
+            Fim = fim
         };
-        var r = _svc.CriarPedido(a, Int(f["Meses"]));
+        var r = _svc.CriarPedido(a, meses);
         if (!r.IsSuccess) return FormComErro(FormPedido(), f, r.Error!);
         return Sucesso($"Pedido {r.Value!.Numero} registado.", "/Seguros/Lista");
     }
@@ -75,12 +226,15 @@ public class SegurosController : BaseController
     {
         var vm = new TabelaVM
         {
-            Titulo = "Listagem de Seguros", Subtitulo = "Apólices e pedidos",
-            Colunas = { "Nº Apólice", "Cliente", "Seguradora", "Ramo", "Objecto", "Prémio", "Início", "Fim", "Estado" },
+            Titulo = "Listagem de Seguros",
+            Subtitulo = "Apólices e pedidos",
+            Colunas = { "Referência", "Número da apólice", "Cliente", "Seguradora", "Ramo", "Objecto", "Prémio", "Início", "Fim", "Estado" },
             AcoesTopo = { AcaoVM.Link("Novo pedido", "/Seguros/Pedido", "ti-plus") }
         };
         foreach (var a in M.Apolices.OrderByDescending(a => a.Id))
-            vm.Linhas.Add(LinhaVM.De(a.Numero, M.NomeCliente(a.ClienteId), M.NomeSeg(a.SeguradoraId), a.Ramo, a.Objecto,
+            vm.Linhas.Add(LinhaVM.De(string.IsNullOrWhiteSpace(a.Referencia) ? a.Numero : a.Referencia,
+                string.IsNullOrWhiteSpace(a.NumeroApolice) ? "—" : a.NumeroApolice,
+                M.NomeCliente(a.ClienteId), M.NomeSeg(a.SeguradoraId), a.Ramo, a.Objecto,
                 Fmt.Mt(a.Premio), Fmt.Dt(a.Inicio), Fmt.Dt(a.Fim), a.Estado));
         return Tabela(vm);
     }
@@ -90,7 +244,8 @@ public class SegurosController : BaseController
     {
         var vm = new TabelaVM
         {
-            Titulo = "Alocação de Débitos", Subtitulo = "Débitos por emitir — emitir e activar apólices",
+            Titulo = "Alocação de Débitos",
+            Subtitulo = "Débitos por emitir — emitir e activar apólices",
             Colunas = { "Nº Débito", "Apólice", "Cliente", "Seguradora", "Valor", "Vencimento" },
             Vazio = "Não há débitos por emitir."
         };
@@ -140,7 +295,8 @@ public class SegurosController : BaseController
     {
         var vm = new TabelaVM
         {
-            Titulo = "Prestação de Contas", Subtitulo = "Valores a entregar às seguradoras (recebido − comissão)",
+            Titulo = "Prestação de Contas",
+            Subtitulo = "Valores a entregar às seguradoras (recebido − comissão)",
             Colunas = { "Seguradora", "Recebido", "Comissão", "Líquido", "Já entregue", "Saldo a entregar" }
         };
         foreach (var s in M.Seguradoras)
@@ -165,7 +321,10 @@ public class SegurosController : BaseController
     // ======================= Inclusão e Exclusão =======================
     private static FormVM FormIncExc() => new()
     {
-        Titulo = "Inclusão e Exclusão", Subtitulo = "Endosso à apólice (inclui/exclui objectos ou pessoas)", ActionUrl = "/Seguros/InclusaoExclusao", VoltarUrl = "/Seguros/Lista",
+        Titulo = "Inclusão e Exclusão",
+        Subtitulo = "Endosso à apólice (inclui/exclui objectos ou pessoas)",
+        ActionUrl = "/Seguros/InclusaoExclusao",
+        VoltarUrl = "/Seguros/Lista",
         Info = "Inclusão gera uma Nota de Débito (prémio adicional). Exclusão gera uma Nota de Crédito (estorno de prémio).",
         Campos =
         {
@@ -191,7 +350,10 @@ public class SegurosController : BaseController
     // ======================= Nota de Débito e Crédito =======================
     private static FormVM FormNota() => new()
     {
-        Titulo = "Nota de Débito e Crédito", Subtitulo = "Emissão manual de notas", ActionUrl = "/Seguros/NotaDebitoCredito", VoltarUrl = "/Seguros/Notas",
+        Titulo = "Nota de Débito e Crédito",
+        Subtitulo = "Emissão manual de notas",
+        ActionUrl = "/Seguros/NotaDebitoCredito",
+        VoltarUrl = "/Seguros/Notas",
         Botao = "Emitir nota",
         Campos =
         {
@@ -217,7 +379,8 @@ public class SegurosController : BaseController
     {
         var vm = new TabelaVM
         {
-            Titulo = "Notas de Débito e Crédito", Subtitulo = "Notas emitidas",
+            Titulo = "Notas de Débito e Crédito",
+            Subtitulo = "Notas emitidas",
             Colunas = { "Nº Nota", "Tipo", "Apólice", "Cliente", "Descrição", "Valor", "Estado" },
             AcoesTopo = { AcaoVM.Link("Nova nota", "/Seguros/NotaDebitoCredito", "ti-plus") }
         };
@@ -243,7 +406,8 @@ public class SegurosController : BaseController
         var h = DateTime.Today;
         var vm = new TabelaVM
         {
-            Titulo = "Seguros por Renovar", Subtitulo = "Apólices activas a terminar nos próximos 60 dias",
+            Titulo = "Seguros por Renovar",
+            Subtitulo = "Apólices activas a terminar nos próximos 60 dias",
             Colunas = { "Nº Apólice", "Cliente", "Seguradora", "Ramo", "Prémio", "Fim", "Dias restantes" }
         };
         foreach (var a in M.Apolices.Where(a => a.Estado == "Activa" && a.Fim >= h && a.Fim <= h.AddDays(60)).OrderBy(a => a.Fim))
@@ -264,7 +428,10 @@ public class SegurosController : BaseController
     {
         var vm = new TabelaVM
         {
-            Titulo = "Extracto do Cliente", Subtitulo = "Movimentos de débito e crédito", Pesquisavel = false, Vazio = "Seleccione um cliente.",
+            Titulo = "Extracto do Cliente",
+            Subtitulo = "Movimentos de débito e crédito",
+            Pesquisavel = false,
+            Vazio = "Seleccione um cliente.",
             Colunas = { "Data", "Documento", "Descrição", "Débito", "Crédito", "Saldo" },
             Filtro = new FiltroVM { Nome = "clienteId", Rotulo = "Cliente", Url = "/Seguros/ExtractoCliente", Valor = clienteId?.ToString() ?? "", Opcoes = Opcoes.Clientes() }
         };
@@ -291,7 +458,8 @@ public class SegurosController : BaseController
     {
         var vm = new TabelaVM
         {
-            Titulo = "Lista de Pagamentos", Subtitulo = "Todos os recibos emitidos",
+            Titulo = "Lista de Pagamentos",
+            Subtitulo = "Todos os recibos emitidos",
             Colunas = { "Recibo", "Data", "Cliente", "Débito", "Método", "Valor", "Tipo", "Estado" }
         };
         foreach (var p in M.Pagamentos.OrderByDescending(p => p.Data).ThenByDescending(p => p.Id))
@@ -308,8 +476,10 @@ public class SegurosController : BaseController
     {
         var vm = new TabelaVM
         {
-            Titulo = "Saldo das Seguradoras", Subtitulo = "Posição por seguradora",
-            Colunas = { "Seguradora", "Prémios recebidos", "Comissão", "Líquido", "Entregue", "Saldo" }, Pesquisavel = false
+            Titulo = "Saldo das Seguradoras",
+            Subtitulo = "Posição por seguradora",
+            Colunas = { "Seguradora", "Prémios recebidos", "Comissão", "Líquido", "Entregue", "Saldo" },
+            Pesquisavel = false
         };
         foreach (var s in M.Seguradoras)
         {

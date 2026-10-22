@@ -9,9 +9,39 @@ public class Cliente
     public string Nuit { get; set; } = "";
     public string TipoDocumento { get; set; } = "";
     public string NumDocumento { get; set; } = "";
+    public DateTime? DataNascimento { get; set; }
+    public string Sexo { get; set; } = "";
+    public string EstadoCivil { get; set; } = "";
+    public string Nacionalidade { get; set; } = "";
+    public string NomePai { get; set; } = "";
+    public string NomeMae { get; set; } = "";
+    public DateTime? DataEmissaoDocumento { get; set; }
+    public DateTime? DataValidadeDocumento { get; set; }
+    public string EntidadeEmissora { get; set; } = "";
     public string Telefone { get; set; } = "";
+    public string TelefoneAlternativo { get; set; } = "";
     public string Email { get; set; } = "";
     public string Endereco { get; set; } = "";
+    public string Cidade { get; set; } = "";
+    public string Distrito { get; set; } = "";
+    public string Provincia { get; set; } = "";
+    public string Bairro { get; set; } = "";
+    public string Pais { get; set; } = "Moçambique";
+    public string EnderecoPostal { get; set; } = "";
+    public int? PaisId { get; set; }
+    public int? ProvinciaId { get; set; }
+    public int? DistritoId { get; set; }
+    public string Profissao { get; set; } = "";
+    public string EntidadeEmpregadora { get; set; } = "";
+    public decimal? RendimentoMensal { get; set; }
+    public string RegistoComercial { get; set; } = "";
+    public string RepresentanteLegal { get; set; } = "";
+    public string NuitRepresentante { get; set; } = "";
+    public string TipoDocumentoRepresentante { get; set; } = "";
+    public string DocumentoRepresentante { get; set; } = "";
+    public string PessoaContacto { get; set; } = "";
+    public string TelefoneContacto { get; set; } = "";
+    public string Observacoes { get; set; } = "";
     public DateTime DataRegisto { get; set; }
 }
 
@@ -22,20 +52,40 @@ public class Seguradora
     public string Sigla { get; set; } = "";
     public string Nuit { get; set; } = "";
     public string Telefone { get; set; } = "";
-    public decimal ComissaoPct { get; set; }
+    public string ReferenciaPadrao { get; set; } = "";
 }
 
 public class Apolice
 {
     public int Id { get; set; }
     public string Numero { get; set; } = "";
+    public string Referencia { get; set; } = "";
+    public string NumeroApolice { get; set; } = "";
+    public string ReferenciaSeguradora { get; set; } = "";
     public int ClienteId { get; set; }
     public int SeguradoraId { get; set; }
+    public int TipoSeguroId { get; set; }
     public string Ramo { get; set; } = "";
     public string TipoSeguro { get; set; } = "";
     public string Objecto { get; set; } = "";
     public decimal Capital { get; set; }
     public decimal Premio { get; set; }
+    public decimal PremioLiquido { get; set; }
+    public decimal Coeficiente { get; set; }
+    public decimal ComissaoPct { get; set; }
+    public decimal ComissaoValor { get; set; }
+    public decimal EncargoPct { get; set; }
+    public decimal EncargoValor { get; set; }
+    public decimal SeloPct { get; set; }
+    public decimal SeloValor { get; set; }
+    public decimal SobretaxaPct { get; set; }
+    public decimal SobretaxaValor { get; set; }
+    public DateTime DataEmissao { get; set; } = DateTime.Today;
+    public DateTime DataRenovacao { get; set; }
+    public string Periodicidade { get; set; } = "Anual";
+    public string Moeda { get; set; } = "MZN";
+    public string TipoCambio { get; set; } = "Venda";
+    public decimal Cambio { get; set; } = 1;
     public DateTime Inicio { get; set; }
     public DateTime Fim { get; set; }
     public string Estado { get; set; } = "Pendente"; // Pendente | Activa | Anulada
@@ -142,6 +192,13 @@ public class CadastroItem
     public string Codigo { get; set; } = "";
     public string Descricao { get; set; } = "";
     public string Extra { get; set; } = "";
+    public int SeguradoraId { get; set; }
+    public decimal Coeficiente { get; set; }
+    public decimal EncargoPct { get; set; }
+    public decimal SeloPct { get; set; }
+    public decimal SobretaxaPct { get; set; }
+    public decimal ComissaoPct { get; set; }
+    public string Estado { get; set; } = "Activo";
 }
 
 public class Tarefa
@@ -183,8 +240,13 @@ public static class CorretoraMock
     public static decimal Comissao(Pagamento p)
     {
         var d = Deb(p.DebitoId);
-        var s = d is null ? null : Seg(d.SeguradoraId);
-        return s is null ? 0 : Math.Round(p.Valor * s.ComissaoPct / 100m, 2);
+        var apolice = d is null ? null : Apo(d.ApoliceId);
+        if (apolice is null) return 0;
+        var comissaoPct = apolice.TipoSeguroId > 0
+            ? apolice.ComissaoPct
+            : Cadastros.FirstOrDefault(c => c.Tipo == "tipos-seguro" && c.Descricao == apolice.TipoSeguro
+                && c.SeguradoraId == apolice.SeguradoraId)?.ComissaoPct ?? 0;
+        return Math.Round(p.Valor * comissaoPct / 100m, 2);
     }
 
     public static Lancamento NovoLancamento(DateTime data, string descricao, string origem, params (string Conta, decimal D, decimal C)[] linhas)
@@ -236,9 +298,18 @@ public static class CorretoraMock
         var ini = DateTime.Today.AddDays(inicioOff);
         var ap = new Apolice
         {
-            Id = id, Numero = $"AP/{cod}/{DateTime.Today.Year}/{id:D4}", ClienteId = cli, SeguradoraId = seg,
-            Ramo = ramo, TipoSeguro = tipo, Objecto = obj, Capital = capital, Premio = premio,
-            Inicio = ini, Fim = ini.AddYears(1).AddDays(-1), Estado = estado
+            Id = id,
+            Numero = $"AP/{cod}/{DateTime.Today.Year}/{id:D4}",
+            ClienteId = cli,
+            SeguradoraId = seg,
+            Ramo = ramo,
+            TipoSeguro = tipo,
+            Objecto = obj,
+            Capital = capital,
+            Premio = premio,
+            Inicio = ini,
+            Fim = ini.AddYears(1).AddDays(-1),
+            Estado = estado
         };
         if (estado == "Anulada") { ap.DataAnulacao = DateTime.Today.AddDays(-90); ap.MotivoAnulacao = "Pedido do cliente"; }
         Apolices.Add(ap);
@@ -246,9 +317,18 @@ public static class CorretoraMock
         var did = Prox(Debitos.Select(x => x.Id));
         var deb = new Debito
         {
-            Id = did, Numero = Sequencia("DB", did), ApoliceId = id, ClienteId = cli, SeguradoraId = seg, Tipo = "Prémio",
-            Descricao = $"Prémio {ramo} — {obj}", Valor = premio, Emissao = emitido ? ini : DateTime.Today,
-            Vencimento = DateTime.Today.AddDays(vencOff), Emitido = emitido, Anulado = anulada
+            Id = did,
+            Numero = Sequencia("DB", did),
+            ApoliceId = id,
+            ClienteId = cli,
+            SeguradoraId = seg,
+            Tipo = "Prémio",
+            Descricao = $"Prémio {ramo} — {obj}",
+            Valor = premio,
+            Emissao = emitido ? ini : DateTime.Today,
+            Vencimento = DateTime.Today.AddDays(vencOff),
+            Emitido = emitido,
+            Anulado = anulada
         };
         Debitos.Add(deb);
 
@@ -265,12 +345,50 @@ public static class CorretoraMock
 
         Seguradoras.AddRange(new[]
         {
-            new Seguradora { Id = 1, Nome = "Empresa Moçambicana de Seguros", Sigla = "EMOSE", Nuit = "400012345", Telefone = "+258 21 300 100", ComissaoPct = 12 },
-            new Seguradora { Id = 2, Nome = "Hollard Moçambique", Sigla = "HOLLARD", Nuit = "400023456", Telefone = "+258 21 320 200", ComissaoPct = 15 },
-            new Seguradora { Id = 3, Nome = "Fidelidade Moçambique", Sigla = "FIDELIDADE", Nuit = "400034567", Telefone = "+258 21 340 300", ComissaoPct = 14 },
-            new Seguradora { Id = 4, Nome = "Global Alliance Seguros", Sigla = "GLOBAL", Nuit = "400045678", Telefone = "+258 21 350 400", ComissaoPct = 13 },
-            new Seguradora { Id = 5, Nome = "Seguradora Internacional de Moçambique", Sigla = "SIM", Nuit = "400056789", Telefone = "+258 21 360 500", ComissaoPct = 12 },
+            new Seguradora { Id = 1, Nome = "Empresa Moçambicana de Seguros", Sigla = "EMOSE", Nuit = "400012345", Telefone = "+258 21 300 100", ReferenciaPadrao = "EMOSE/" },
+            new Seguradora { Id = 2, Nome = "Hollard Moçambique", Sigla = "HOLLARD", Nuit = "400023456", Telefone = "+258 21 320 200", ReferenciaPadrao = "HOLLARD/" },
+            new Seguradora { Id = 3, Nome = "Fidelidade Moçambique", Sigla = "FIDELIDADE", Nuit = "400034567", Telefone = "+258 21 340 300", ReferenciaPadrao = "FIDELIDADE/" },
+            new Seguradora { Id = 4, Nome = "Global Alliance Seguros", Sigla = "GLOBAL", Nuit = "400045678", Telefone = "+258 21 350 400", ReferenciaPadrao = "GLOBAL/" },
+            new Seguradora { Id = 5, Nome = "Seguradora Internacional de Moçambique", Sigla = "SIM", Nuit = "400056789", Telefone = "+258 21 360 500", ReferenciaPadrao = "SIM/" },
         });
+
+        Cad("paises", "MZ", "Moçambique");
+        var paisMocambique = Cadastros.Last().Id;
+        var provincias = new Dictionary<string, int>();
+        foreach (var (codigo, nome) in new[]
+        {
+            ("CD", "Cabo Delgado"), ("GZ", "Gaza"), ("IN", "Inhambane"), ("MN", "Manica"),
+            ("MP", "Maputo"), ("MC", "Maputo Cidade"), ("NP", "Nampula"), ("NS", "Niassa"),
+            ("SF", "Sofala"), ("TT", "Tete"), ("ZB", "Zambézia")
+        })
+        {
+            Cad("provincias", codigo, nome, paisMocambique.ToString());
+            provincias[codigo] = Cadastros.Last().Id;
+        }
+        var distritos = new Dictionary<string, int>();
+        foreach (var (codigo, nome, provincia) in new[]
+        {
+            ("KAM", "KaMpfumo", "MC"), ("KAMV", "KaMavota", "MC"), ("KAMU", "KaMubukwana", "MC"),
+            ("MAT", "Matola", "MP"), ("BOA", "Boane", "MP"), ("MAR", "Marracuene", "MP"), ("BEI", "Beira", "SF")
+        })
+        {
+            Cad("distritos", codigo, nome, provincias[provincia].ToString());
+            distritos[codigo] = Cadastros.Last().Id;
+        }
+
+        Cad("nacionalidades", "MOZ", "Moçambicana");
+        Cad("nacionalidades", "RSA", "Sul-africana");
+        Cad("nacionalidades", "PRT", "Portuguesa");
+        Cad("nacionalidades", "ZWE", "Zimbabueana");
+        Cad("nacionalidades", "MWI", "Malawiana");
+        Cad("profissoes", "ADM", "Administrativo(a)");
+        Cad("profissoes", "COM", "Comerciante");
+        Cad("profissoes", "DOC", "Docente");
+        Cad("profissoes", "ENG", "Engenheiro(a)");
+        Cad("profissoes", "MED", "Profissional de saúde");
+        Cad("profissoes", "MOT", "Motorista");
+        Cad("profissoes", "OUT", "Outra profissão");
+        Cad("entidades-empregadoras", "NA", "Não aplicável");
 
         Cli(1, "Particular", "Ana Maria Sitoe", "100200301", "BI", "110100123456B", "+258 84 123 4567", "ana.sitoe@email.co.mz", "Av. 24 de Julho, 1200, Maputo", -400);
         Cli(2, "Empresa", "Hotel Maputo Bay, SA", "400900101", "NUIT", "400900101", "+258 21 480 000", "geral@maputobay.co.mz", "Av. Marginal, 55, Maputo", -380);
@@ -279,12 +397,41 @@ public static class CorretoraMock
         Cli(5, "Particular", "Fátima Cossa", "100200505", "Passaporte", "AB123456", "+258 87 888 9999", "fatima.cossa@email.co.mz", "Polana Cimento, Maputo", -3);
         Cli(6, "Empresa", "Transportes Limpopo, Lda", "400900606", "NUIT", "400900606", "+258 82 555 6666", "frota@limpopo.co.mz", "Zona Industrial da Beira", -250);
 
+        void AssociarLocalidade(int clienteId, string provincia, string distrito)
+        {
+            var cliente = Cli(clienteId)!;
+            var regiao = Cadastros.First(c => c.Tipo == "provincias" && c.Codigo == provincia);
+            cliente.PaisId = paisMocambique;
+            cliente.Pais = "Moçambique";
+            cliente.ProvinciaId = regiao.Id;
+            cliente.Provincia = regiao.Descricao;
+            if (distrito.Length == 0) return;
+            var local = Cadastros.First(c => c.Tipo == "distritos" && c.Codigo == distrito);
+            cliente.DistritoId = local.Id;
+            cliente.Distrito = local.Descricao;
+        }
+        AssociarLocalidade(1, "MC", "KAM");
+        AssociarLocalidade(2, "MC", "KAM");
+        AssociarLocalidade(3, "MP", "MAT");
+        AssociarLocalidade(4, "MC", "KAMV");
+        AssociarLocalidade(5, "MC", "KAM");
+        AssociarLocalidade(6, "SF", "BEI");
+
         Cad("ramos", "AUT", "Automóvel"); Cad("ramos", "INC", "Incêndio e Riscos Diversos"); Cad("ramos", "SAU", "Saúde");
         Cad("ramos", "ACT", "Acidentes de Trabalho"); Cad("ramos", "TRA", "Transportes"); Cad("ramos", "VID", "Vida");
         Cad("tipos-seguro", "RCA", "Responsabilidade Civil (Auto)", "Automóvel"); Cad("tipos-seguro", "TRA1", "Todos os Riscos (Auto)", "Automóvel");
         Cad("tipos-seguro", "MRC", "Multirriscos Comercial", "Incêndio e Riscos Diversos"); Cad("tipos-seguro", "PSE", "Plano Saúde Empresarial", "Saúde");
         Cad("tipos-seguro", "ATR", "Acidentes de Trabalho", "Acidentes de Trabalho"); Cad("tipos-seguro", "MTR", "Mercadorias Transportadas", "Transportes");
         Cad("tipos-seguro", "VRI", "Vida Risco", "Vida");
+        foreach (var tipoSeguro in Cadastros.Where(c => c.Tipo == "tipos-seguro"))
+        {
+            tipoSeguro.SeguradoraId = 1;
+            tipoSeguro.Coeficiente = 0.813010m;
+            tipoSeguro.EncargoPct = 20m;
+            tipoSeguro.SeloPct = 5m;
+            tipoSeguro.SobretaxaPct = 1.5m;
+            tipoSeguro.ComissaoPct = 20m;
+        }
         Cad("coberturas", "COB01", "Danos a Terceiros", "Automóvel"); Cad("coberturas", "COB02", "Roubo e Furto", "Automóvel");
         Cad("coberturas", "COB03", "Colisão e Capotamento", "Automóvel"); Cad("coberturas", "COB04", "Incêndio e Explosão", "Incêndio e Riscos Diversos");
         Cad("coberturas", "COB05", "Assistência Médica e Medicamentosa", "Saúde");

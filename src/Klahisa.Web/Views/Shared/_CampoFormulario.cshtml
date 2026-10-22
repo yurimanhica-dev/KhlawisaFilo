@@ -1,0 +1,59 @@
+@model Klahisa.Web.Shared.Models.CampoVM
+@{
+    var c = Model;
+    var req = c.Obrigatorio && !c.SoLeitura && string.IsNullOrEmpty(c.MostrarParaTipo);
+    var valorCampo = c.Valor;
+}
+<div class="form-group span-@c.Largura" data-show-for="@c.MostrarParaTipo" data-required-for="@(c.Obrigatorio ? c.MostrarParaTipo : null)">
+    <label>@c.Rotulo @if (req) { <em>*</em> } else if (c.Obrigatorio && !c.SoLeitura && c.MostrarParaTipo != null) { <em class="required-marker">*</em> }</label>
+    @if (c.Tipo == "select")
+    {
+        if (c.Pesquisavel)
+        {
+            var clienteSelecionado = c.Opcoes.FirstOrDefault(o => o.Valor == c.Valor);
+            var listaId = $"pesquisa-{c.Nome.ToLowerInvariant()}";
+            <div class="search-select" data-search-select>
+                <div class="search-select-control">
+                    <input type="text" class="form-control" value="@clienteSelecionado.Texto" placeholder="Pesquisar por clientes..."
+                           autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="@listaId"
+                           required data-search-select-input />
+                    <button type="button" class="search-select-toggle" aria-label="Mostrar clientes" tabindex="-1" data-search-select-toggle>▾</button>
+                </div>
+                <input type="hidden" name="@c.Nome" value="@c.Valor" data-search-select-value />
+                <div id="@listaId" class="search-select-menu" role="listbox" hidden data-search-select-menu>
+                    @foreach (var opcao in c.Opcoes)
+                    {
+                        <button type="button" class="search-select-option" role="option" aria-selected="@(opcao.Valor == c.Valor ? "true" : "false")"
+                                data-search-select-option data-value="@opcao.Valor" data-label="@opcao.Texto">@opcao.Texto</button>
+                    }
+                    <div class="search-select-empty" hidden data-search-select-empty>Nenhum cliente encontrado.</div>
+                </div>
+            </div>
+        }
+        else
+        {
+            if (c.SoLeitura) { <input type="hidden" name="@c.Nome" value="@c.Valor" /> }
+            <select name="@(c.SoLeitura ? "" : c.Nome)" class="form-control" required="@req" disabled="@c.SoLeitura" data-field-name="@c.Nome" data-insurance-type="@(c.Nome == "TipoSeguroId" ? "true" : "false")" data-depends-on="@c.DependeDe">
+                @if (!req || string.IsNullOrEmpty(c.Valor)) { <option value="">—</option> }
+                @foreach (var o in c.Opcoes)
+                {
+                    var parentId = c.OpcaoPai.TryGetValue(o.Valor, out var pai) ? pai : "";
+                    var optionData = c.DadosOpcao.TryGetValue(o.Valor, out var dados) ? dados : "";
+                    <option value="@o.Valor" data-parent-id="@parentId" data-option-data="@optionData" selected="@(o.Valor == c.Valor)">@o.Texto</option>
+                }
+            </select>
+        }
+    }
+    else if (c.Tipo == "textarea")
+    {
+        <textarea name="@c.Nome" rows="3" class="form-control" required="@req" data-field-name="@c.Nome">@c.Valor</textarea>
+    }
+    else
+    {
+        <input type="@(c.Nome == "NumeroApolice" || c.Tipo == "number" ? "text" : c.Tipo)" name="@c.Nome" value="@valorCampo" lang="@(c.Tipo == "date" && c.Nome != "NumeroApolice" ? "pt-MZ" : null)" autocomplete="@(c.Nome == "NumeroApolice" ? "off" : null)" spellcheck="@(c.Nome == "NumeroApolice" ? "false" : null)" class="form-control" required="@req" readonly="@c.SoLeitura" data-field-name="@c.Nome"
+               data-decimal-input="@(c.Tipo == "number" && c.Nome != "NumeroApolice" ? "true" : null)" data-min-value="@(c.Nome is "RendimentoMensal" or "Capital" ? "0" : null)"
+               inputmode="@(c.Nome == "NumeroApolice" ? "text" : c.Tipo == "date" ? "numeric" : c.Tipo == "number" ? "decimal" : null)"
+               placeholder="@(c.Nome == "NumeroApolice" ? null : c.Tipo == "date" ? "dd/MM/yyyy" : c.Tipo == "number" ? "0.00" : null)"
+               />
+    }
+</div>

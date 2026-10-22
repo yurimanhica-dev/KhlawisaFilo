@@ -23,6 +23,9 @@ public static class Opcoes
     public static List<(string, string)> Cad(string tipo) =>
         M.Cadastros.Where(c => c.Tipo == tipo).Select(c => (c.Descricao, c.Descricao)).ToList();
 
+    public static List<(string, string)> CadastrosPorId(string tipo) =>
+        M.Cadastros.Where(c => c.Tipo == tipo).OrderBy(c => c.Descricao).Select(c => (c.Id.ToString(), c.Descricao)).ToList();
+
     public static List<(string, string)> Moedas()
     {
         var l = new List<(string, string)> { ("MZN", "MZN — Metical") };
