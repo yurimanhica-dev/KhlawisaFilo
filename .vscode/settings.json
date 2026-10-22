@@ -1,0 +1,5 @@
+{
+  "editor.formatOnSave": true,
+  "omnisharp.enableRoslynAnalyzers": true,
+  "dotnet.defaultSolution": "KLAHISA.sln"
+}

@@ -1,0 +1,19 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "command": "dotnet",
+      "type": "process",
+      "args": [ "build", "${workspaceFolder}/src/Klahisa.Web/Klahisa.Web.csproj", "/property:GenerateFullPaths=true", "/consoleloggerparameters:NoSummary" ],
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "watch",
+      "command": "dotnet",
+      "type": "process",
+      "args": [ "watch", "run", "--project", "${workspaceFolder}/src/Klahisa.Web/Klahisa.Web.csproj" ],
+      "problemMatcher": "$msCompile"
+    }
+  ]
+}

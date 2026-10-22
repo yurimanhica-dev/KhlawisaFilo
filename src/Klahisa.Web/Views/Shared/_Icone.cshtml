@@ -1,0 +1,40 @@
+@model string
+@{
+    var chave = (Model as string ?? "").Replace("ti-", "");
+    var nome = chave switch
+    {
+        "menu-2" => "menu", "layout-dashboard" => "layout-dashboard", "users" => "users",
+        "shield-check" => "shield-check", "cash" => "wallet", "alert-octagon" => "triangle-alert",
+        "calculator" => "calculator", "settings" => "settings", "chart-bar" => "chart-column",
+        "chevron-left" => "chevron-left", "chevron-right" => "chevron-right", "file-description" => "file-text",
+        "target" => "target", "share" => "share-2", "user" => "user", "id" => "contact",
+        "checklist" => "list-checks", "key" => "key-round", "lock" => "lock-keyhole", "logout" => "log-out",
+        "plus" => "plus", "edit" => "pencil", "x" => "x", "book" => "book-open", "printer" => "printer",
+        "arrow-left" => "arrow-left", "trash" => "trash-2", "check" => "check", "send" => "send",
+        "clock" => "clock-3", "refresh" => "refresh-cw", "alert-triangle" => "triangle-alert",
+        "circle-plus" => "circle-plus", _ => "circle-help"
+    };
+    var svgPath = nome switch
+    {
+        "menu" => "<path d='M4 6h16M4 12h16M4 18h16'/>",
+        "layout-dashboard" => "<rect x='3' y='3' width='7' height='9' rx='1'/><rect x='14' y='3' width='7' height='5' rx='1'/><rect x='14' y='12' width='7' height='9' rx='1'/><rect x='3' y='16' width='7' height='5' rx='1'/>",
+        "users" => "<path d='M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2'/><circle cx='10' cy='7' r='4'/><path d='M20 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75'/>",
+        "shield-check" => "<path d='M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z'/><path d='m9 12 2 2 4-4'/>",
+        "wallet" => "<rect x='3' y='5' width='18' height='15' rx='2'/><path d='M3 9h18M16 14h.01'/>",
+        "triangle-alert" => "<path d='m10.3 3.9-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3.1l-8-14a2 2 0 0 0-3.4 0z'/><path d='M12 9v4m0 4h.01'/>",
+        "calculator" => "<rect x='4' y='2' width='16' height='20' rx='2'/><path d='M8 6h8M8 11h2m4 0h2m-8 4h2m4 0h2m-8 4h2m4 0h2'/>",
+        "settings" => "<circle cx='12' cy='12' r='3'/><path d='m19.4 15 .1.1 1.4 1.1-1.4 2.4-1.7-.6a8 8 0 0 1-1.7 1l-.3 1.8h-2.8l-.3-1.8a8 8 0 0 1-1.7-1l-1.7.6-1.4-2.4L7.3 15a8 8 0 0 1 0-2l-1.4-1.1 1.4-2.4 1.7.6a8 8 0 0 1 1.7-1l.3-1.8h2.8l.3 1.8a8 8 0 0 1 1.7 1l1.7-.6 1.4 2.4-1.4 1.1a8 8 0 0 1-.1 2z'/>",
+        "chart-column" => "<path d='M3 3v18h18'/><path d='M18 17V9M13 17V5M8 17v-3'/>",
+        "chevron-left" => "<path d='m15 18-6-6 6-6'/>", "chevron-right" => "<path d='m9 18 6-6-6-6'/>",
+        "file-text" => "<path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><path d='M14 2v6h6M8 13h8m-8 4h8'/>",
+        "target" => "<circle cx='12' cy='12' r='10'/><circle cx='12' cy='12' r='6'/><circle cx='12' cy='12' r='2'/>",
+        "share-2" => "<circle cx='18' cy='5' r='3'/><circle cx='6' cy='12' r='3'/><circle cx='18' cy='19' r='3'/><path d='m8.6 10.5 6.8-4m-6.8 7 6.8 4'/>",
+        "user" => "<circle cx='12' cy='8' r='5'/><path d='M20 21a8 8 0 0 0-16 0'/>", "contact" => "<rect x='3' y='4' width='18' height='16' rx='2'/><circle cx='9' cy='10' r='2'/><path d='M5 17a4 4 0 0 1 8 0m2-7h3m-3 4h3'/>",
+        "list-checks" => "<path d='m3 5 2 2 4-4M3 12l2 2 4-4M3 19l2 2 4-4M13 6h8m-8 7h8m-8 7h8'/>",
+        "key-round" => "<circle cx='8' cy='15' r='5'/><path d='m21 2-9.6 9.6M15.5 7.5l3 3L22 7l-3-3'/>", "lock-keyhole" => "<rect x='3' y='11' width='18' height='11' rx='2'/><path d='M7 11V7a5 5 0 0 1 10 0v4m-5 4v3'/>", "log-out" => "<path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14 5-5-5-5m5 5H9'/>",
+        "plus" => "<path d='M12 5v14m-7-7h14'/>", "pencil" => "<path d='M12 20h9'/><path d='M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z'/>", "x" => "<path d='m18 6-12 12M6 6l12 12'/>",
+        "book-open" => "<path d='M12 7v14m0-14C9 4 5 4 3 5v14c2-1 6-1 9 2m0-14c3-3 7-3 9-2v14c-2-1-6-1-9 2'/>", "printer" => "<path d='M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/><path d='M6 14h12v8H6z'/>", "arrow-left" => "<path d='m12 19-7-7 7-7m7 7H5'/>", "trash-2" => "<path d='M3 6h18m-2 0-.9 14H5.9L5 6m4 0V4h6v2m-5 4v7m4-7v7'/>",
+        "check" => "<path d='m5 12 4 4L19 6'/>", "send" => "<path d='m22 2-7 20-4-9-9-4Z'/><path d='M22 2 11 13'/>", "clock-3" => "<circle cx='12' cy='12' r='10'/><path d='M12 6v6l4 2'/>", "refresh-cw" => "<path d='M20 7v5h-5M4 17v-5h5'/><path d='M5.6 9a7 7 0 0 1 11.6-2L20 12M4 12l2.8 5a7 7 0 0 0 11.6-2'/>", "circle-plus" => "<circle cx='12' cy='12' r='10'/><path d='M12 8v8m-4-4h8'/", _ => "<circle cx='12' cy='12' r='10'/><path d='M9.5 9a2.5 2.5 0 1 1 4.2 1.8c-1.1 1-1.7 1.2-1.7 2.7m0 3h.01'/>"
+    };
+}
+<svg class="lucide-icon @ViewData["IconClass"]" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">@Html.Raw(svgPath)</svg>

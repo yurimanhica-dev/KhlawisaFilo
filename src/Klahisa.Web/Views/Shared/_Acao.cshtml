@@ -1,0 +1,12 @@
+@model AcaoVM
+@if (Model.Post)
+{
+    <form method="post" action="@Model.Url" class="inline-form" data-confirm="@Model.Confirmar">
+        @Html.AntiForgeryToken()
+        <button type="submit" class="btn @Model.Css btn-sm">@if (!string.IsNullOrEmpty(Model.Icone)) { <partial name="_Icone" model="Model.Icone" /> } @Model.Texto</button>
+    </form>
+}
+else
+{
+    <a class="btn @Model.Css btn-sm" href="@Model.Url">@if (!string.IsNullOrEmpty(Model.Icone)) { <partial name="_Icone" model="Model.Icone" /> } @Model.Texto</a>
+}

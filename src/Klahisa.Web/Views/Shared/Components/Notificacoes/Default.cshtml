@@ -1,0 +1,31 @@
+@model NotificacoesVM
+@{
+    var blocos = new[]
+    {
+        ("ti-clock", "badge-red", "Débitos por vencer", "/Seguros/DebitosPorVencer", Model.Vencer),
+        ("ti-edit", "badge-teal", "Débitos por emitir", "/Seguros/AlocacaoDebitos", Model.Emitir),
+        ("ti-refresh", "badge-blue", "Seguros por renovar", "/Seguros/ARenovar", Model.Renovar)
+    };
+}
+@foreach (var b in blocos)
+{
+    <div class="dd">
+        <button type="button" class="dd-toggle icon-btn" data-dd title="@b.Item3">
+            <partial name="_Icone" model="b.Item1" /><span class="count @b.Item2">@b.Item5.Count</span>
+        </button>
+        <div class="dd-menu dd-notif">
+            <div class="dd-head"><strong>@b.Item3</strong><a href="@b.Item4">ver todos</a></div>
+            @if (!b.Item5.Any()) { <div class="dd-empty">Sem itens.</div> }
+            @foreach (var n in b.Item5.Take(6))
+            {
+                <a class="dd-item" href="@n.Url" aria-label="Abrir @b.Item3: @n.Cliente, @n.Documento">
+                    <span class="dias">@n.Dias</span>
+                    <div>
+                        <div class="dd-line"><strong>@n.Cliente</strong><em>@Fmt.Mt(n.Valor)</em></div>
+                        <small>@n.Documento</small>
+                    </div>
+                </a>
+            }
+        </div>
+    </div>
+}

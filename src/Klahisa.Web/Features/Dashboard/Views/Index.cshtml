@@ -1,0 +1,74 @@
+@model Klahisa.Web.Features.Dashboard.DashboardVM
+@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["Subtitle"] = "Visão geral e Estatísticas";
+    string J(object o) => System.Text.Json.JsonSerializer.Serialize(o);
+}
+
+<div class="card section-title"><div class="card-body"><partial name="_Icone" model='"ti-share"' /> <strong>ESTATÍSTICAS DE @Model.MesActual</strong></div></div>
+
+<div class="stat-grid">
+    <a class="stat stat-link stat-teal" href="/Clientes/Novo" aria-label="Cadastrar cliente"><partial name="_Icone" model='"ti-users"' view-data="@(new ViewDataDictionary(ViewData) { ["IconClass"] = "stat-icon" })" /><div class="stat-value">@Model.ClientesMes</div><div class="stat-label">CLIENTES NOVOS</div><div class="stat-foot"><span>TOTAL ACUMULADO</span><strong>@Model.ClientesTotal</strong></div></a>
+    <a class="stat stat-link stat-red" href="/Seguros/Pedido" aria-label="Registar pedido de seguro"><partial name="_Icone" model='"ti-file-description"' view-data="@(new ViewDataDictionary(ViewData) { ["IconClass"] = "stat-icon" })" /><div class="stat-value">@Model.Pedidos</div><div class="stat-label">PEDIDOS / COTAÇÕES</div><div class="stat-foot"><span>PENDENTES</span><strong>@Model.PedidosTotal</strong></div></a>
+    <a class="stat stat-link stat-blue" href="/Seguros/Pedido" aria-label="Registar seguro"><partial name="_Icone" model='"ti-shield-check"' view-data="@(new ViewDataDictionary(ViewData) { ["IconClass"] = "stat-icon" })" /><div class="stat-value">@Model.Apolices</div><div class="stat-label">APÓLICES EMITIDAS</div><div class="stat-foot"><span>ACTIVAS</span><strong>@Model.ApolicesTotal</strong></div></a>
+    <a class="stat stat-link stat-purple" href="/Sinistros/Ocorrencia" aria-label="Registar ocorrência"><partial name="_Icone" model='"ti-target"' view-data="@(new ViewDataDictionary(ViewData) { ["IconClass"] = "stat-icon" })" /><div class="stat-value">@Model.SinistrosMes</div><div class="stat-label">SINISTROS</div><div class="stat-foot"><span>TOTAL ACUMULADO</span><strong>@Model.SinistrosTotal</strong></div></a>
+</div>
+
+<div class="card">
+    <div class="card-header"><h2>SEGUROS SOLICITADOS <small>Vendas acumuladas por mês</small></h2></div>
+    <div class="card-body"><div class="chart-box"><canvas id="grafico"></canvas></div></div>
+</div>
+
+<div class="two-col">
+    <div class="card">
+        <div class="card-header"><h2>Débitos vencidos</h2><a class="card-header-link" href="/Seguros/DebitosVencidos">Ver todos</a></div>
+        <div class="card-body table-wrap">
+            @if (!Model.Vencidos.Any()) { <p class="empty-state">Sem débitos vencidos.</p> }
+            else
+            {
+                <table class="data-table">
+                    <thead><tr><th>Débito</th><th>Cliente</th><th>Saldo</th><th>Venceu</th></tr></thead>
+                    <tbody>
+                        @foreach (var d in Model.Vencidos)
+                        {
+                            <tr><td>@d.Numero</td><td>@CorretoraMock.NomeCliente(d.ClienteId)</td><td>@Fmt.Mt(d.Saldo)</td><td>@Fmt.Dt(d.Vencimento)</td></tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+    <div class="card">
+        <div class="card-header"><h2>Últimas apólices</h2><a class="card-header-link" href="/Seguros/Lista">Ver todas</a></div>
+        <div class="card-body table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Apólice</th><th>Cliente</th><th>Prémio</th><th>Estado</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Ultimas)
+                    {
+                        <tr><td>@a.Numero</td><td>@CorretoraMock.NomeCliente(a.ClienteId)</td><td>@Fmt.Mt(a.Premio)</td><td><span class="badge @(a.Estado == "Activa" ? "badge-success" : a.Estado == "Anulada" ? "badge-danger" : "badge-warning")">@a.Estado</span></td></tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+        new Chart(document.getElementById('grafico'), {
+            type: 'line',
+            data: {
+                labels: @Html.Raw(J(Model.Meses)),
+                datasets: [
+                    { label: 'Seguros Emitidos', data: @Html.Raw(J(Model.Emitidos)), borderColor: '#1c63d6', backgroundColor: 'rgba(28,99,214,.25)', fill: true, tension: .3 },
+                    { label: 'Débitos Pagos', data: @Html.Raw(J(Model.Pagos)), borderColor: '#17a2b8', backgroundColor: 'rgba(23,162,184,.2)', fill: true, tension: .3 },
+                    { label: 'Comissão', data: @Html.Raw(J(Model.Comissao)), borderColor: '#1ea34a', backgroundColor: 'rgba(30,163,74,.2)', fill: true, tension: .3 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        });
+    </script>
+}
+    

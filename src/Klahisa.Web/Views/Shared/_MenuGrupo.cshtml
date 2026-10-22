@@ -1,0 +1,21 @@
+@model MenuGrupo
+@{
+    var atual = ViewData["Atual"] as string ?? "";
+    var aberto = Model.Contem(atual);
+    var sub = Model.Icone == "ti-chevron-right";
+}
+<details class="menu-group @(sub ? "menu-sub" : "")" @(aberto ? "open" : "")>
+    <summary>
+        <partial name="_Icone" model="Model.Icone" /><span>@Model.Texto</span><partial name="_Icone" model='"ti-chevron-left"' view-data="@(new ViewDataDictionary(ViewData) { ["IconClass"] = "caret" })" />
+    </summary>
+    <div class="menu-items">
+        @foreach (var i in Model.Items)
+        {
+            <a href="@i.Url" class="@(i.Activo(atual) ? "is-active" : "")">@i.Texto</a>
+        }
+        @foreach (var s in Model.Sub)
+        {
+            <partial name="_MenuGrupo" model="s" view-data="ViewData" />
+        }
+    </div>
+</details>

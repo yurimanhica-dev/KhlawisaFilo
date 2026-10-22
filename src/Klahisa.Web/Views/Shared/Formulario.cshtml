@@ -1,0 +1,52 @@
+@model FormVM
+@{
+    ViewData["Title"] = Model.Titulo;
+    ViewData["Subtitle"] = Model.Subtitulo;
+}
+
+<div class="card">
+    <div class="card-header"><h2>@Model.Titulo</h2></div>
+    <div class="card-body">
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="alert alert-danger">@string.Join(" ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))</div>
+        }
+        @if (!string.IsNullOrEmpty(Model.Info)) { <div class="alert alert-info">@Model.Info</div> }
+
+        <form method="post" action="@Model.ActionUrl">
+            @Html.AntiForgeryToken()
+            <div class="form-grid">
+                @foreach (var c in Model.Campos)
+                {
+                    var req = c.Obrigatorio && !c.SoLeitura;
+                    <div class="form-group span-@c.Largura">
+                        <label>@c.Rotulo @if (req) { <em>*</em> }</label>
+                        @if (c.Tipo == "select")
+                        {
+                            if (c.SoLeitura) { <input type="hidden" name="@c.Nome" value="@c.Valor" /> }
+                            <select name="@(c.SoLeitura ? "" : c.Nome)" class="form-control" required="@req" disabled="@c.SoLeitura">
+                                @if (!c.Obrigatorio) { <option value="">—</option> }
+                                @foreach (var o in c.Opcoes)
+                                {
+                                    <option value="@o.Valor" selected="@(o.Valor == c.Valor)">@o.Texto</option>
+                                }
+                            </select>
+                        }
+                        else if (c.Tipo == "textarea")
+                        {
+                            <textarea name="@c.Nome" rows="3" class="form-control" required="@req">@c.Valor</textarea>
+                        }
+                        else
+                        {
+                            <input type="@c.Tipo" name="@c.Nome" value="@c.Valor" class="form-control" required="@req" readonly="@c.SoLeitura" step="@(c.Tipo == "number" ? "any" : null)" />
+                        }
+                    </div>
+                }
+            </div>
+            <div class="form-actions">
+                @if (Model.ActionUrl != "") { <button type="submit" class="btn btn-primary">@Model.Botao</button> }
+                @if (!string.IsNullOrEmpty(Model.VoltarUrl)) { <a class="btn btn-ghost" href="@Model.VoltarUrl">Cancelar</a> }
+            </div>
+        </form>
+    </div>
+</div>

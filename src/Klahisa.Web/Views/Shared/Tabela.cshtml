@@ -1,0 +1,94 @@
+@model TabelaVM
+@functions {
+    static string Badge(string t) => t switch
+    {
+        "Pago" or "Activa" or "Aprovado" or "Concluída" or "Emitido" or "Completo" or "Sim" => "badge-success",
+        "Pendente" or "Parcial" or "Em análise" or "Por emitir" => "badge-warning",
+        "Vencido" or "Anulado" or "Anulada" => "badge-danger",
+        _ => ""
+    };
+}
+@{
+    ViewData["Title"] = Model.Titulo;
+    ViewData["Subtitle"] = Model.Subtitulo;
+    var temAcoes = Model.Linhas.Any(l => l.Acoes.Count > 0);
+}
+
+@if (Model.Filtro is { } f)
+{
+    <div class="card">
+        <div class="card-body">
+            <form method="get" action="@f.Url" class="filtro">
+                <label>@f.Rotulo</label>
+                <select name="@f.Nome" class="form-control" onchange="this.form.submit()">
+                    <option value="">— Seleccione —</option>
+                    @foreach (var o in f.Opcoes)
+                    {
+                        <option value="@o.Valor" selected="@(o.Valor == f.Valor)">@o.Texto</option>
+                    }
+                </select>
+            </form>
+        </div>
+    </div>
+}
+
+@if (Model.Resumo.Any())
+{
+    <div class="resumo-grid">
+        @foreach (var r in Model.Resumo)
+        {
+            <div class="resumo-item"><span>@r.Rotulo</span><strong>@r.Valor</strong></div>
+        }
+    </div>
+}
+
+<div class="card">
+    <div class="card-header">
+        <h2>@Model.Titulo</h2>
+        <div class="card-tools">
+            @if (Model.Pesquisavel && Model.Linhas.Any())
+            {
+                <input type="search" class="form-control form-control-sm" placeholder="Pesquisar…" data-table-search />
+            }
+            @foreach (var a in Model.AcoesTopo) { <partial name="_Acao" model="a" /> }
+        </div>
+    </div>
+    <div class="card-body table-wrap">
+        @if (!Model.Linhas.Any())
+        {
+            <p class="empty-state">@Model.Vazio</p>
+        }
+        else
+        {
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        @foreach (var c in Model.Colunas) { <th>@c</th> }
+                        @if (temAcoes) { <th></th> }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var l in Model.Linhas)
+                    {
+                        if (l.Celulas.Count > 0 && l.Celulas[0].StartsWith("## "))
+                        {
+                            <tr class="row-head"><td colspan="@(Model.Colunas.Count + (temAcoes ? 1 : 0))">@l.Celulas[0].Substring(3)</td></tr>
+                            continue;
+                        }
+                        <tr>
+                            @foreach (var c in l.Celulas)
+                            {
+                                var b = Badge(c);
+                                <td>@if (b != "") { <span class="badge @b">@c</span> } else { @c }</td>
+                            }
+                            @if (temAcoes)
+                            {
+                                <td class="acoes">@foreach (var a in l.Acoes) { <partial name="_Acao" model="a" /> }</td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>

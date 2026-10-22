@@ -1,0 +1,11 @@
+@model Klahisa.Web.Models.ErrorViewModel
+@{ ViewData["Title"] = "Erro"; }
+<div class="card card-narrow">
+    <div class="card-body" style="text-align:center">
+        <partial name="_Icone" model='"ti-alert-triangle"' view-data="@(new ViewDataDictionary(ViewData) { ["IconClass"] = "error-icon" })" />
+        <h2>Ocorreu um erro</h2>
+        <p>Não foi possível concluir o pedido. Tente novamente.</p>
+        @if (Model.ShowRequestId) { <p class="muted-note">Ref.: @Model.RequestId</p> }
+        <a class="btn btn-primary" href="/Dashboard/Index">Voltar ao Dashboard</a>
+    </div>
+</div>

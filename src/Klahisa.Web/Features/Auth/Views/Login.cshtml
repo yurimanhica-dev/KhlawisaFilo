@@ -1,0 +1,50 @@
+@model Klahisa.Web.Features.Auth.LoginViewModel
+@{
+    ViewData["Title"] = "Entrar";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="pt-MZ">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Entrar — Klahisa Filo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="login-body">
+    <div class="login-shell">
+        <div class="login-card">
+            <img src="~/images/logo.png" alt="Klahisa Filo" class="login-logo" />
+            <h1>Sistema de Gestão de Seguros</h1>
+            <p class="login-subtitle">Corretora de Seguros</p>
+
+            @if (TempData["Aviso"] != null) { <div class="alert alert-info">@TempData["Aviso"]</div> }
+            @if (!ViewData.ModelState.IsValid && ViewData.ModelState[string.Empty]?.Errors.Count > 0)
+            {
+                <div class="alert alert-danger">@ViewData.ModelState[string.Empty]!.Errors.First().ErrorMessage</div>
+            }
+
+            <div class="alert alert-info">
+                Demonstração:<br />
+                <strong>admin@klahisafilo.co.mz</strong> / <strong>Klahisa@2026</strong>
+            </div>
+
+            <form asp-controller="Auth" asp-action="Login" method="post" novalidate>
+                @Html.AntiForgeryToken()
+                <div class="form-group">
+                    <label asp-for="Email"></label>
+                    <input asp-for="Email" class="form-control" placeholder="seu@klahisafilo.co.mz" autocomplete="username" />
+                    <span asp-validation-for="Email" class="field-error"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Senha"></label>
+                    <input asp-for="Senha" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+                    <span asp-validation-for="Senha" class="field-error"></span>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
