@@ -6,99 +6,141 @@
 }
 
 <div class="card">
-    <div class="card-header"><h2>@Model.Titulo</h2></div>
+    <div class="card-header">
+        <h2>@Model.Titulo</h2>
+    </div>
     <div class="card-body">
         @if (!ViewData.ModelState.IsValid && !Model.UsaAbas)
         {
-            <div class="alert alert-danger">@string.Join(" ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))</div>
-        }
-        @if (!string.IsNullOrEmpty(Model.Info)) { <div class="alert alert-info">@Model.Info</div> }
-
-        <form method="post" action="@Model.ActionUrl" novalidate="@Model.UsaAbas"
-              data-client-type-form="@(Model.Campos.Any(c => !string.IsNullOrEmpty(c.MostrarParaTipo)) ? "true" : "false")"
-              data-validate-tabs="@(Model.UsaAbas ? "true" : "false")"
-              data-insurance-request="@(Model.ActionUrl.StartsWith("/Seguros/Pedido", StringComparison.OrdinalIgnoreCase) ? "true" : "false")">
-            @Html.AntiForgeryToken()
-
-            @if (Model.UsaAbas)
+            <div class="alert alert-danger">@string.Join(" ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e
+                                            => e.ErrorMessage))</div>
+            }
+            @if (!string.IsNullOrEmpty(Model.Info))
             {
-                @if (!ViewData.ModelState.IsValid)
-                {
-                    <div class="alert alert-warning form-required-warning" role="alert" data-required-warning>
-                        @string.Join(" ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage))
-                    </div>
-                }
-                else
-                {
-                    <div class="alert alert-warning form-required-warning" role="alert" data-required-warning hidden>
-                        Preencha todos os campos obrigatórios.
-                    </div>
-                }
+                <div class="alert alert-info">@Model.Info</div>
             }
 
-            @if (Model.UsaAbas)
-            {
-                <div class="form-tabs" role="tablist" aria-label="Secções do formulário">
-                    @for (var i = 0; i < abas.Count; i++)
-                    {
-                        var tiposDaAba = Model.Campos.Where(c => c.Aba == abas[i]).Select(c => c.MostrarParaTipo).Distinct().ToList();
-                        var tipoDaAba = tiposDaAba.Count == 1 ? tiposDaAba[0] : null;
-                        <button type="button" id="form-tab-@i" class="form-tab @(i == 0 ? "is-active" : "")" role="tab"
-                                aria-controls="form-tab-panel-@i" aria-selected="@(i == 0 ? "true" : "false")" data-form-tab="@i" data-tab-for-type="@tipoDaAba">@abas[i]</button>
-                    }
-                </div>
-            }
+            <form method="post" action="@Model.ActionUrl" novalidate="@Model.UsaAbas"
+                  enctype="@(Model.ActionUrl == "/Clientes/Novo" ? "multipart/form-data" : "application/x-www-form-urlencoded")"
+                  data-client-type-form="@(Model.Campos.Any(c => !string.IsNullOrEmpty(c.MostrarParaTipo)) ? "true" : "false")"
+                  data-validate-tabs="@(Model.UsaAbas ? "true" : "false")"
+                  data-insurance-request="@(Model.ActionUrl.StartsWith("/Seguros/Pedido", StringComparison.OrdinalIgnoreCase) ? "true" : "false")">
+                @Html.AntiForgeryToken()
 
-            @for (var i = 0; i < abas.Count; i++)
-            {
-                var aba = abas[i];
-                var tiposDaAba = Model.Campos.Where(c => c.Aba == aba).Select(c => c.MostrarParaTipo).Distinct().ToList();
-                var tipoDaAba = tiposDaAba.Count == 1 ? tiposDaAba[0] : null;
-                var camposDaAba = Model.Campos.Where(c => !Model.UsaAbas || c.Aba == aba).ToList();
-                var layoutDetalhesSeguro = Model.ActionUrl.StartsWith("/Seguros/Pedido", StringComparison.OrdinalIgnoreCase) && aba == "Detalhes";
-                <section id="form-tab-panel-@i" class="form-tab-panel @(i == 0 ? "is-active" : "")" role="tabpanel" aria-labelledby="form-tab-@i" data-form-tab-panel="@i" data-tab-for-type="@tipoDaAba">
-                    @if (layoutDetalhesSeguro)
-                    {
-                        <div class="insurance-details-layout">
-                            <div class="form-grid insurance-details-fields">
-                                @foreach (var c in camposDaAba.Where(c => !c.CartaoLateral))
+                <div class="cliente-form-layout">
+                    <div class="cliente-form-panel">
+                        @if (Model.UsaAbas)
+                        {
+                            @if (!ViewData.ModelState.IsValid)
+                            {
+                                <div class="alert alert-warning form-required-warning" role="alert" data-required-warning>
+                                    @string.Join(" ", ViewData.ModelState.Values.SelectMany(v => v.Errors).Select(e =>
+                        e.ErrorMessage))
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="alert alert-warning form-required-warning" role="alert" data-required-warning hidden>
+                                    Preencha todos os campos obrigatórios.
+                                </div>
+                            }
+                        }
+
+                        @if (Model.UsaAbas)
+                        {
+                            <div class="form-tabs" role="tablist" aria-label="Secções do formulário">
+                                @for (var i = 0; i < abas.Count; i++)
                                 {
-                                    @await Html.PartialAsync("_CampoFormulario", c)
+                                    var tiposDaAba = Model.Campos.Where(c => c.Aba == abas[i]).Select(c =>
+                            c.MostrarParaTipo).Distinct().ToList();
+                                    var tipoDaAba = tiposDaAba.Count == 1 ? tiposDaAba[0] : null;
+                                    <button type="button" id="form-tab-@i" class="form-tab @(i == 0 ? "is-active" : "")" role="tab"
+                                            aria-controls="form-tab-panel-@i" aria-selected="@(i == 0 ? "true" : "false")"
+                                            data-form-tab="@i" data-tab-for-type="@tipoDaAba">@abas[i]</button>
                                 }
                             </div>
-                            <aside class="insurance-rates-card">
-                                <h3>Taxas e cálculo</h3>
-                                <div class="form-grid">
-                                    @foreach (var c in camposDaAba.Where(c => c.CartaoLateral))
-                                    {
-                                        @await Html.PartialAsync("_CampoFormulario", c)
-                                    }
-                                </div>
-                            </aside>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="form-grid">
-                            @{ var secaoAtual = ""; }
-                            @foreach (var c in camposDaAba)
-                            {
-                                if (!string.IsNullOrEmpty(c.Secao) && c.Secao != secaoAtual && (!Model.UsaAbas || c.Secao != aba))
+                        }
+
+                        @for (var i = 0; i < abas.Count; i++)
+                        {
+                            var aba = abas[i];
+                            var tiposDaAba = Model.Campos.Where(c => c.Aba == aba).Select(c =>
+                    c.MostrarParaTipo).Distinct().ToList();
+                            var tipoDaAba = tiposDaAba.Count == 1 ? tiposDaAba[0] : null;
+                            var camposDaAba = Model.Campos.Where(c => !Model.UsaAbas || c.Aba == aba).ToList();
+                            var layoutDetalhesSeguro = Model.ActionUrl.StartsWith("/Seguros/Pedido",
+                    StringComparison.OrdinalIgnoreCase)
+                        && aba == "Detalhes";
+                            <section id="form-tab-panel-@i" class="form-tab-panel @(i == 0 ? "is-active" : "")" role="tabpanel"
+                                     aria-labelledby="form-tab-@i" data-form-tab-panel="@i" data-tab-for-type="@tipoDaAba">
+                                @if (layoutDetalhesSeguro)
                                 {
-                                    secaoAtual = c.Secao;
-                                    <div class="form-section span-12" data-show-for="@c.MostrarParaTipo">@secaoAtual</div>
+                                    <div class="insurance-details-layout">
+                                        <div class="form-grid insurance-details-fields">
+                                            @foreach (var c in camposDaAba.Where(c => !c.CartaoLateral))
+                                            {
+                                                @await Html.PartialAsync("_CampoFormulario", c)
+                                            }
+                                        </div>
+                                        <aside class="insurance-rates-card">
+                                            <h3>Taxas e cálculo</h3>
+                                            <div class="form-grid">
+                                                @foreach (var c in camposDaAba.Where(c => c.CartaoLateral))
+                                                {
+                                                    @await Html.PartialAsync("_CampoFormulario", c)
+                                                }
+                                            </div>
+                                        </aside>
+                                    </div>
                                 }
-                                @await Html.PartialAsync("_CampoFormulario", c)
+                                else
+                                {
+                                    <div class="form-grid">
+                                        @{
+                                            var secaoAtual = "";
+                                        }
+                                        @foreach (var c in camposDaAba)
+                                        {
+                                            if (!string.IsNullOrEmpty(c.Secao) && c.Secao != secaoAtual && (!Model.UsaAbas || c.Secao !=
+                            aba))
+                                            {
+                                                secaoAtual = c.Secao;
+                                                <div class="form-section span-12" data-show-for="@c.MostrarParaTipo">@secaoAtual</div>
+                                            }
+                                            @await Html.PartialAsync("_CampoFormulario", c)
+                                        }
+                                    </div>
+                                }
+                            </section>
+                        }
+
+                        <div class="form-actions">
+                            @if (Model.ActionUrl != "")
+                            {
+                                <button type="submit" class="btn btn-primary">@Model.Botao</button>
+                            }
+                            @if (!string.IsNullOrEmpty(Model.VoltarUrl))
+                            {
+                                <a class="btn btn-ghost" href="@Model.VoltarUrl">Cancelar</a>
                             }
                         </div>
-                    }
-                </section>
-            }
+                    </div>
 
-            <div class="form-actions">
-                @if (Model.ActionUrl != "") { <button type="submit" class="btn btn-primary">@Model.Botao</button> }
-                @if (!string.IsNullOrEmpty(Model.VoltarUrl)) { <a class="btn btn-ghost" href="@Model.VoltarUrl">Cancelar</a> }
-            </div>
-        </form>
+                    @if (Model.ActionUrl == "/Clientes/Novo")
+                    {
+                        <aside class="cliente-foto-panel">
+                            <div class="cliente-foto-card">
+                                <div class="cliente-foto-preview">
+                                    <img id="clienteFotoPreview" src="/images/logoicon.png" alt="Foto do cliente" />
+                                </div>
+                                <div class="cliente-foto-actions">
+                                    <label class="btn btn-ghost btn-sm" for="clienteFotoInput">Escolher foto</label>
+                                    <input id="clienteFotoInput" type="file" name="Foto" accept="image/*" />
+                                </div>
+                            </div>
+                        </aside>
+                    }
+                </div>
+            </form>
+        </div>
     </div>
-</div>

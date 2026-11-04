@@ -5,9 +5,12 @@
     var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
     var acao = ViewContext.RouteData.Values["action"]?.ToString();
 }
+
 <!DOCTYPE html>
 <html lang="pt-MZ">
+
 <head>
+    <link rel="icon" type="image/png" href="~/images/logoicon.png" asp-append-version="true" />
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] — Klahisa Filo</title>
@@ -16,59 +19,87 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
-<body>
-<div class="app-wrapper" id="appWrapper">
 
-    <header class="topbar">
-        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu"><partial name="_Icone" model='"ti-menu-2"' /></button>
-        <a href="/Dashboard/Index" class="brand"><img src="~/images/logo.png" alt="Klahisa Filo — Gestão de Património" /></a>
+<body class="dark-mode">
+    <div class="app-wrapper" id="appWrapper">
+        <header class="topbar">
+            <button class="sidebar-toggle" id="sidebarToggle" aria-label="Menu">
+                <partial name="_Icone" model='"ti-menu-2"' />
+            </button>
+            <a href="/Dashboard/Index" class="brand">
+                <img src="~/images/logo.png" alt="Klahisa Filo — Gestão de Património" />
+            </a>
 
-        <div class="topbar-right">
-            @await Component.InvokeAsync("Notificacoes")
+            <div class="topbar-right">
+                <button type="button" class="theme-toggle topbar-theme-toggle" data-theme-toggle
+                        aria-label="Alternar tema">
+                    <span class="theme-toggle-icon">☀️</span>
+                </button>
 
-            <div class="dd">
-                <button type="button" class="dd-toggle user-btn" data-dd><span class="d-none-mobile">@nome</span> <partial name="_Icone" model='"ti-user"' /></button>
-                <div class="dd-menu dd-user">
-                    <a href="/Conta/MeuPerfil"><partial name="_Icone" model='"ti-id"' /> Meu Perfil</a>
-                    <a href="/Conta/MinhasTarefas"><partial name="_Icone" model='"ti-checklist"' /> Minhas Tarefas</a>
-                    <a href="/Conta/AlterarSenha"><partial name="_Icone" model='"ti-key"' /> Alterar Senha</a>
-                    <form method="post" action="/Conta/Bloquear">@Html.AntiForgeryToken()<button type="submit"><partial name="_Icone" model='"ti-lock"' /> Bloquear Conta</button></form>
-                    <form method="post" action="/Auth/Logout">@Html.AntiForgeryToken()<button type="submit"><partial name="_Icone" model='"ti-logout"' /> Sair</button></form>
+                @await Component.InvokeAsync("Notificacoes")
+
+                <div class="dd">
+                    <button type="button" class="dd-toggle user-btn" data-dd><span class="d-none-mobile">@nome</span>
+                        <partial name="_Icone" model='"ti-user"' />
+                    </button>
+                    <div class="dd-menu dd-user">
+                        <a href="/Conta/MeuPerfil">
+                            <partial name="_Icone" model='"ti-id"' /> Meu Perfil
+                        </a>
+                        <a href="/Conta/MinhasTarefas">
+                            <partial name="_Icone" model='"ti-checklist"' /> Minhas Tarefas
+                        </a>
+                        <a href="/Conta/AlterarSenha">
+                            <partial name="_Icone" model='"ti-key"' /> Alterar Senha
+                        </a>
+                        <form method="post" action="/Conta/Bloquear">@Html.AntiForgeryToken()<button type="submit">
+                            <partial name="_Icone" model='"ti-lock"' /> Bloquear Conta
+                        </button></form>
+                        <form method="post" action="/Auth/Logout">@Html.AntiForgeryToken()<button type="submit">
+                            <partial name="_Icone" model='"ti-logout"' /> Sair
+                        </button></form>
+                    </div>
                 </div>
             </div>
+        </header>
+
+        <aside class="sidebar" id="appSidebar">
+            <nav class="menu">
+                @foreach (var g in MenuApp.Grupos)
+                {
+                    <partial name="_MenuGrupo" model="g" view-data="ViewData" />
+                }
+            </nav>
+        </aside>
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+        <div class="content-wrapper">
+            <main class="content">
+                <div class="page-head">
+                    <h1>@ViewData["Title"] <small>@ViewData["Subtitle"]</small></h1>
+                    <nav class="crumbs"><a href="/Dashboard/Index">Corretora</a> • @ctrl • @acao</nav>
+                </div>
+
+                @if (TempData["Sucesso"] != null)
+                {
+                    <div class="alert alert-success">@TempData["Sucesso"]</div>
+                }
+                @if (TempData["Erro"] != null)
+                {
+                    <div class="alert alert-danger">@TempData["Erro"]</div>
+                }
+
+                @RenderBody()
+            </main>
+            <footer class="footer">
+                <span>&copy; @DateTime.Now.Year Klahisa Filo — Corretora de Seguros</span>
+                <span>Gestão de Património</span>
+            </footer>
         </div>
-    </header>
-
-    <aside class="sidebar" id="appSidebar">
-        <nav class="menu">
-            @foreach (var g in MenuApp.Grupos)
-            {
-                <partial name="_MenuGrupo" model="g" view-data="ViewData" />
-            }
-        </nav>
-    </aside>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-
-    <div class="content-wrapper">
-        <main class="content">
-            <div class="page-head">
-                <h1>@ViewData["Title"] <small>@ViewData["Subtitle"]</small></h1>
-                <nav class="crumbs"><a href="/Dashboard/Index">Corretora</a> • @ctrl • @acao</nav>
-            </div>
-
-            @if (TempData["Sucesso"] != null) { <div class="alert alert-success">@TempData["Sucesso"]</div> }
-            @if (TempData["Erro"] != null) { <div class="alert alert-danger">@TempData["Erro"]</div> }
-
-            @RenderBody()
-        </main>
-        <footer class="footer">
-            <span>&copy; @DateTime.Now.Year Klahisa Filo — Corretora de Seguros</span>
-            <span>Gestão de Património</span>
-        </footer>
     </div>
-</div>
 
-<script src="~/js/site.js" asp-append-version="true"></script>
-@await RenderSectionAsync("Scripts", required: false)
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
 </body>
+
 </html>

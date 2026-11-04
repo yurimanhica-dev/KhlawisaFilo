@@ -62,8 +62,12 @@ public class CampoVM
     public bool SoLeitura { get; set; }
     public bool CartaoLateral { get; set; }
     public bool Pesquisavel { get; set; }
+    public bool ValidacaoDecimal { get; set; }
     public int Largura { get; set; } = 6;
     public string Dica { get; set; } = "";
+    public bool SoDigitos { get; set; }
+    public int MinDigitos { get; set; }
+    public int MaxDigitos { get; set; }
     public string Secao { get; set; } = "";
     public string Aba { get; set; } = "";
     public string? MostrarParaTipo { get; set; }
@@ -78,9 +82,11 @@ public class CampoVM
     public static CampoVM Area(string n, string r, bool obrig = true)
         => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Largura = 12, Tipo = "textarea" };
 
-    public static CampoVM Num(string n, string r, string valor = "", bool obrig = true, int larg = 6)
-        => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Largura = larg, Valor = valor, Tipo = "number" };
+    public static CampoVM Dig(string n, string r, int min, int max, bool obrig = true, int larg = 6)
+        => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Largura = larg, Tipo = "text", SoDigitos = true, MinDigitos = min, MaxDigitos = max };
 
+    public static CampoVM Num(string n, string r, string valor = "", bool obrig = true, int larg = 6)
+        => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Largura = larg, Valor = valor, Tipo = "text", ValidacaoDecimal = true };   // era "number"
     public static CampoVM Dat(string n, string r, DateTime? v = null, bool obrig = true, int larg = 6)
         => new() { Nome = n, Rotulo = r, Obrigatorio = obrig, Tipo = "date", Largura = larg, Valor = v.HasValue ? v.Value.ToString("yyyy-MM-dd") : "" };
 

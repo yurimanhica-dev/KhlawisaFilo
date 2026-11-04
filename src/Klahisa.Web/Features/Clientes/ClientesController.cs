@@ -48,7 +48,7 @@ public class ClientesController(CorretoraService _svc) : BaseController
         ActionUrl = "/Clientes/Novo",
         VoltarUrl = "/Clientes/Lista",
         UsaAbas = true,
-        Info = "Os dados profissionais e empresariais aparecem conforme o tipo de cliente. Recolha dados de diligência apenas quando forem necessários ao produto ou processo.",
+        // Info = "Os dados profissionais e empresariais aparecem conforme o tipo de cliente. Recolha dados de diligência apenas quando forem necessários ao produto ou processo.",
         Campos =
         {
             Campo(CampoVM.Sel("Tipo", "Tipo de cliente", Opcoes.De("Particular", "Empresa"), larg: 3), "Identificação"),
@@ -98,7 +98,7 @@ public class ClientesController(CorretoraService _svc) : BaseController
     public IActionResult Novo() => Form(FormCliente());
 
     [HttpPost]
-    public IActionResult Novo(IFormCollection f)
+    public async Task<IActionResult> Novo(IFormCollection f, IFormFile? Foto)
     {
         var tipo = f["Tipo"].ToString();
         if (tipo is not ("Particular" or "Empresa"))
@@ -106,6 +106,21 @@ public class ClientesController(CorretoraService _svc) : BaseController
 
         if (string.IsNullOrWhiteSpace(f["Nome"]) || string.IsNullOrWhiteSpace(f["Nuit"]) || string.IsNullOrWhiteSpace(f["Telefone"]))
             return FormComErro(FormCliente(), f, "Informe o nome, NUIT e telefone principal do cliente.");
+
+        if (!SoDigitos(f["Nuit"], 9, 9))
+            return FormComErro(FormCliente(), f, "O NUIT deve conter apenas 9 dígitos.");
+
+        if (!SoDigitos(f["Telefone"], 8, 12))
+            return FormComErro(FormCliente(), f, "O telefone principal deve conter apenas dígitos e ter entre 8 e 12 números.");
+
+        if (!string.IsNullOrWhiteSpace(f["TelefoneAlternativo"]) && !SoDigitos(f["TelefoneAlternativo"], 8, 12))
+            return FormComErro(FormCliente(), f, "O telefone alternativo deve conter apenas dígitos.");
+
+        if (tipo == "Empresa" && !string.IsNullOrWhiteSpace(f["NuitRepresentante"]) && !SoDigitos(f["NuitRepresentante"], 9, 9))
+            return FormComErro(FormCliente(), f, "O NUIT do representante deve conter apenas 9 dígitos.");
+
+        if (tipo == "Empresa" && !string.IsNullOrWhiteSpace(f["TelefoneContacto"]) && !SoDigitos(f["TelefoneContacto"], 8, 12))
+            return FormComErro(FormCliente(), f, "O telefone da pessoa responsável deve conter apenas dígitos.");
 
         var dataNascimento = DataOpcional(f["DataNascimento"]);
         if (tipo == "Particular" && (dataNascimento is null
@@ -183,7 +198,34 @@ public class ClientesController(CorretoraService _svc) : BaseController
         };
         var r = _svc.RegistarCliente(c);
         if (!r.IsSuccess) return FormComErro(FormCliente(), f, r.Error!);
+
+        if (Foto is { Length: > 0 })
+        {
+            var extensao = Path.GetExtension(Foto.FileName);
+            var pasta = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "clientes");
+            Directory.CreateDirectory(pasta);
+
+            var nomeArquivo = $"cliente-{r.Value!.Id}{extensao}";
+            var caminho = Path.Combine(pasta, nomeArquivo);
+            await using (var stream = System.IO.File.Create(caminho))
+            {
+                await Foto.CopyToAsync(stream);
+            }
+
+            r.Value!.Foto = nomeArquivo;
+        }
+
         return Sucesso($"Cliente {r.Value!.Codigo} registado com sucesso.", "/Clientes/Lista");
+    }
+
+    private static bool SoDigitos(string? valor, int minimo = 1, int? maximo = null)
+    {
+        if (string.IsNullOrWhiteSpace(valor)) return false;
+        var texto = valor.Trim();
+        if (!texto.All(char.IsDigit)) return false;
+        if (texto.Length < minimo) return false;
+        if (maximo.HasValue && texto.Length > maximo.Value) return false;
+        return true;
     }
 
     private static DateTime? DataOpcional(string? valor) =>

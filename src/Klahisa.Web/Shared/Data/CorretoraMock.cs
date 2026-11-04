@@ -7,6 +7,7 @@ public class Cliente
     public string Nome { get; set; } = "";
     public string Tipo { get; set; } = "";
     public string Nuit { get; set; } = "";
+    public string Foto { get; set; } = "";
     public string TipoDocumento { get; set; } = "";
     public string NumDocumento { get; set; } = "";
     public DateTime? DataNascimento { get; set; }
@@ -216,6 +217,7 @@ public class Tarefa
 public static class CorretoraMock
 {
     public static readonly List<Cliente> Clientes = new();
+    public static readonly List<Cliente> Colaboradores = Clientes;
     public static readonly List<Seguradora> Seguradoras = new();
     public static readonly List<Apolice> Apolices = new();
     public static readonly List<Debito> Debitos = new();
@@ -236,6 +238,16 @@ public static class CorretoraMock
     public static Debito? Deb(int id) => Debitos.FirstOrDefault(x => x.Id == id);
     public static string NomeCliente(int id) => Cli(id)?.Nome ?? "—";
     public static string NomeSeg(int id) => Seg(id)?.Sigla ?? "—";
+
+    public static bool EhActivo(Cliente cliente) => true;
+
+    public static List<CadastroItem> PorTipo(string tipo, int incluir = 0)
+    {
+        var itens = Cadastros.Where(c => c.Tipo == tipo).OrderBy(c => c.Descricao).ToList();
+        if (incluir > 0 && !itens.Any(x => x.Id == incluir))
+            itens.Insert(0, new CadastroItem { Id = incluir, Descricao = "—" });
+        return itens;
+    }
 
     public static decimal Comissao(Pagamento p)
     {

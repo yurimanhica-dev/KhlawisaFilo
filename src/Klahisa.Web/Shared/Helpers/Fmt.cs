@@ -1,11 +1,41 @@
+
 namespace Klahisa.Web.Shared.Helpers;
 
 public static class Fmt
 {
-    public static string Mt(decimal v) => v.ToString("N2") + " MT";
-    public static string Dt(DateTime d) => d.ToString("dd/MM/yyyy");
-    public static string Dt(DateTime? d) => d.HasValue ? d.Value.ToString("dd/MM/yyyy") : "—";
-    public static string Num(decimal v) => v.ToString("0.00", CultureInfo.InvariantCulture);
+    private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+    private static readonly CultureInfo Pt = new("pt-PT");
+
+    public const string FormatoData = "dd/MM/yyyy";
+    public const string FormatoDataExtenso = "dd/MMMM/yyyy";
+
+    public static string Num(decimal v) => v.ToString("N2", Inv);
+    public static string Num(decimal? v) => (v ?? 0m).ToString("N2", Inv);
+    public static string Num(string? s) => Parse(s).ToString("N2", Inv);
+
+    public static string Mt(decimal v) => Num(v) + " MT";
+    public static string Mt(decimal? v) => Num(v) + " MT";
+
+    public static decimal Parse(string? s) =>
+        decimal.TryParse(s?.Trim(), NumberStyles.Any, Inv, out var v) ? v : 0m;
+
+    public static string Dias(decimal v) => v.ToString("0.##", Inv);
+    public static string Pct(decimal v) => v.ToString("0.##", Inv) + " %";
+
+    public static string Dt(DateTime d) => d.ToString(FormatoData, Pt);
+    public static string Dt(DateTime? d) => d.HasValue ? Dt(d.Value) : "—";
+    public static string DtExtenso(DateTime d) => d.ToString(FormatoDataExtenso, Pt);
+    public static string DtHora(DateTime d) => d.ToString(FormatoData + " HH:mm", Pt);
+    public static string Input(DateTime? d) => d.HasValue ? d.Value.ToString("yyyy-MM-dd", Inv) : "";
+
+    private static readonly string[] Meses =
+    {
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+    };
+
+    public static string Mes(int m) => m is >= 1 and <= 12 ? Meses[m - 1] : "—";
+    public static string[] NomesMeses => Meses;
+    public static string MesAno(int m, int a) => $"{Mes(m)} / {a}";
 }
 
 public static class Opcoes
@@ -43,4 +73,16 @@ public static class Opcoes
     }
 
     public static List<(string, string)> De(params string[] valores) => valores.Select(v => (v, v)).ToList();
+}
+
+public static class Opc
+{
+    public static List<(string, string)> Clientes() => Opcoes.Clientes();
+    public static List<(string, string)> Seguradoras() => Opcoes.Seguradoras();
+    public static List<(string, string)> Apolices(bool soActivas = false) => Opcoes.Apolices(soActivas);
+    public static List<(string, string)> Cad(string tipo) => Opcoes.Cad(tipo);
+    public static List<(string, string)> CadastrosPorId(string tipo) => Opcoes.CadastrosPorId(tipo);
+    public static List<(string, string)> Moedas() => Opcoes.Moedas();
+    public static List<(string, string)> Contas(bool vazio = false, bool soLancaveis = true) => Opcoes.Contas(vazio, soLancaveis);
+    public static List<(string, string)> De(params string[] valores) => Opcoes.De(valores);
 }
